@@ -172,6 +172,13 @@ public class StarRocksSinkOptions implements Serializable {
             .defaultValue(false)
             .withDescription("When true, row data and column values in Stream-Load error logs are redacted.");
 
+    public static final ConfigOption<Integer> SINK_PUBLISH_TIMEOUT = ConfigOptions.key("sink.publish-timeout.ms")
+            .intType()
+            .defaultValue(-1)
+            .withDescription("Timeout in milliseconds for publish phase. If the transaction stays in COMMITTED " +
+                    "status longer than this timeout, consider it as success. Default is -1 which means using " +
+                    "StarRocks server-side default behavior. When merge commit is enabled, default is 10000ms.");
+
     // Sink semantic
     private static final Set<String> SINK_SEMANTIC_ENUMS = Arrays.stream(StarRocksSinkSemantic.values()).map(s -> s.getName()).collect(Collectors.toSet());
     // wild stream load properties' prefix
@@ -399,6 +406,10 @@ public class StarRocksSinkOptions implements Serializable {
         return tableOptions.get(SINK_SANITIZE_ERROR_LOG);
     }
 
+    public int getPublishTimeoutMs() {
+        return tableOptions.get(SINK_PUBLISH_TIMEOUT);
+    }
+
     public boolean isBlackhole() {
         return tableOptions.get(SINK_BLACKHOLE);
     }
@@ -612,6 +623,7 @@ public class StarRocksSinkOptions implements Serializable {
                 .maxRetries(0)
                 .retryIntervalInMs(getRetryIntervalMs())
                 .sanitizeErrorLog(isSanitizeErrorLog())
+                .setPublishTimeoutMs(getPublishTimeoutMs())
                 .setBlackhole(isBlackhole());
         MergeCommitOptions.buildMergeCommitOptions(tableOptions, streamLoadProperties, defaultTablePropertiesBuilder, builder);
         defaultTablePropertiesBuilder.addCommonProperties(streamLoadProperties);
